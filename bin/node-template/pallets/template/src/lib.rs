@@ -24,6 +24,7 @@ pub mod pallet {
 	use ark_serialize::{CanonicalSerialize, Compress};
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use wasmer_test::wasm_pairing;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -86,6 +87,22 @@ pub mod pallet {
 		pub fn pairing_arkworks(origin: OriginFor<T>, something: u32) -> DispatchResult {
 			//for a fair benchmark, this would probably need some deserialization from the arguments
 			let out = Bls12_381::pairing(&G1Affine::generator(), &G2Affine::generator());
+
+			Ok(())
+		}
+		
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
+		pub fn pairing_wasmcurves(origin: OriginFor<T>, something: u32) -> DispatchResult {
+			//for a fair benchmark, this would probably need some deserialization from the arguments
+			let g1 = G1Affine::generator();
+			let g2 = G2Affine::generator();
+
+			let mut g1_serialized = [0u8; 48];
+			let mut g2_serialized = [0u8; 96];
+			g1.serialize_with_mode(g1_serialized.as_mut_slice(), Compress::Yes).unwrap();
+			g2.serialize_with_mode(g2_serialized.as_mut_slice(), Compress::Yes).unwrap();
+
+			let out = wasm_pairing(&g1_serialized, &g2_serialized);
 
 			Ok(())
 		}
